@@ -142,6 +142,11 @@ inline void led_on(void) {
   DDRD |= _BV(LED_PIN);
   PORTD |= _BV(LED_PIN);
 }
+inline void led_toggle(void) {
+  DDRD |= _BV(LED_PIN);
+  PORTD ^= _BV(LED_PIN);
+}
+
 
 inline void start_measure(void) {
   /* Activate noise canceler, detection on rising edge */
@@ -158,6 +163,54 @@ inline void start_measure(void) {
 inline uint8_t measured(void) {
   return TIFR & _BV(ICF1);
 }
+
+/* This is the code that uses the touch input. */
+
+/* In our case we want to blink the LED at a rate that will heighten when
+ * touch is on, and slow back down when touch is off.
+ */
+
+/* This is the inverse-frequency that is controlled by the off/on process.*/
+#define default_freq 16
+
+uint8_t case_freq    = default_freq;
+
+/* This is the counter for the led state process. */
+uint8_t case_cycle   = 0;
+
+inline void case_step(void) {
+  if(!case_cycle) {
+    led_toggle();
+    case_cycle = case_freq;
+  } else {
+    case_cycle--;
+  }
+}
+
+uint8_t case_off_wait = 0; /* control how fast we go down */
+inline void case_off(void) {
+  case_off_wait++;
+  if(case_off_wait < 4) {
+    return;
+  }
+  case_off_wait = 0;
+  if(case_freq < default_freq) {
+    case_freq++;
+  }
+}
+
+uint8_t case_on_wait = 0; /* control how fast we go up */
+inline void case_on(void) {
+  case_on_wait++;
+  if(case_on_wait < 2) {
+    return;
+  }
+  case_on_wait = 0;
+  if(case_freq) {
+    case_freq--;
+  }
+}
+
 
 /* Watchdog timer handler */
 
@@ -282,11 +335,12 @@ ISR( WDT_OVERFLOW_vect, ISR_BLOCK ) {
       return;
 
     case state_work:
-      led_off();
+      case_step();
       to(state_work_start);
       return;
 
     case state_work_start:
+      case_step();
       if(counter < discharge_cycles) {
         set_input_low();
       } else {
@@ -295,19 +349,21 @@ ISR( WDT_OVERFLOW_vect, ISR_BLOCK ) {
       return;
 
     case state_work_low:
+      case_step();
       start_measure();
       set_input_charge();
       to(state_work_charging);
       return;
 
     case state_work_charging:
+      case_step();
       if(measured()) {
         uint16_t measure = ICR1;
         if(measure <= led_off_max) {
-          led_off();
+          case_off();
         }
         if(measure >= led_on_min) {
-          led_on();
+          case_on();
         }
         to(state_work_start);
       }
