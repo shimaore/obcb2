@@ -92,6 +92,10 @@ inline void power_init(void) {
 /* INPUT is PD6/ICPI , pin #11 on ATTiny2313A PDIP/SOIC */
 #define INPUT_PORT PORTD6
 
+/* Connect a pull-up resistor between Vcc and the input port.
+ * Tested values for pull-up: 100K-ohm, 1M-ohm.
+ */
+
 inline void ports_init(void) {
   /* Configure PORTD */
   PORTD &= ~_BV(INPUT_PORT); /* PD6 is kept output-low/input-Hi-Z */
@@ -170,6 +174,7 @@ uint16_t led_off_max = 0;
 uint16_t led_on_min = 0xffff;
 
 const uint8_t wait_timeout = intervals(1.500);
+const uint8_t discharge_cycles = 2;
 const uint8_t max_measures = intervals(2.500);
 
 ISR( WDT_OVERFLOW_vect, ISR_BLOCK ) {
@@ -197,8 +202,11 @@ ISR( WDT_OVERFLOW_vect, ISR_BLOCK ) {
       return;
 
     case state_setup_led_off_start:
-      set_input_low();
-      to(state_setup_led_off_low);
+      if(counter < discharge_cycles) {
+        set_input_low();
+      } else {
+        to(state_setup_led_off_low);
+      }
       return;
 
     case state_setup_led_off_low:
@@ -237,8 +245,11 @@ ISR( WDT_OVERFLOW_vect, ISR_BLOCK ) {
       return;
 
     case state_setup_led_on_start:
-      set_input_low();
-      to(state_setup_led_on_low);
+      if(counter < discharge_cycles) {
+        set_input_low();
+      } else {
+        to(state_setup_led_on_low);
+      }
       return;
 
     case state_setup_led_on_low:
@@ -276,8 +287,11 @@ ISR( WDT_OVERFLOW_vect, ISR_BLOCK ) {
       return;
 
     case state_work_start:
-      set_input_low();
-      to(state_work_low);
+      if(counter < discharge_cycles) {
+        set_input_low();
+      } else {
+        to(state_work_low);
+      }
       return;
 
     case state_work_low:
