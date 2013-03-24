@@ -1,82 +1,388 @@
-#include <avr/io.h>      // this contains all the IO port definitions
-#include <util/delay.h>
+#include <stdlib.h>
+#include <avr/io.h>     // this contains all the IO port definitions
+#include <avr/wdt.h>    // Watchdog
+#include <avr/sleep.h>  // Sleep Mode
+#include <avr/interrupt.h> // cli() etc.
 
-// This function basically wastes time
-void delay_ms( uint16_t milliseconds)
-{
-   for( ; milliseconds > 0; milliseconds--)
-   {
-      _delay_ms( 1);
-   }
+inline void status(uint8_t b) {
+  DDRB = 0xff;
+  PORTB = ~b; /* common positive */
+}
+
+#ifndef PCIE0
+#define PCIE0 PCIE
+#endif
+#ifndef PCIE2
+#define PCIE2 4
+#endif
+
+enum {
+  state_start,
+  /* In Setup mode, we let the user train us by flashing the light on and off at 0.25Hz.
+   * User must put finger when on, and take it back when off.
+   * During the first 0.5s of each 2s "on" period we do not collect data (this gives the user
+   * time to actually move their finger). We then sample for 1.5s.
+   */
+  state_setup_led_off = 0x9,
+  state_setup_led_off_waiting, /* 0.5s LED off, no data gathering */
+  state_setup_led_off_start,
+  state_setup_led_off_low,
+  state_setup_led_off_charging,
+
+  state_setup_led_on = 0x11,
+  state_setup_led_on_waiting, /* 0.5s LED on, no data gathering ("move finger" period)*/
+  state_setup_led_on_start,
+  state_setup_led_on_low,     /* 0.03s LED on, input low = discharge */
+  state_setup_led_on_charging,     /* LED on, input Hi-Z = charge */
+
+  /* Depending on the data gathered so far, we either
+   * - go back to state_setup_led_off (try again)
+   * - or have enough data to move to work state.
+   *
+   * In work state we sample at 20Hz and do something useful if we detect the finger
+   * is present.
+   */
+  state_work = 0x21,
+  state_work_start,        /* 0.01s Input low = discharge */
+  state_work_low,          /* input Hi-Z = charge */
+  state_work_charging
+}; uint8_t state;
+
+/* Keep these two in sync */
+#define intervals(t) (t/0.030)
+#define TIMEBASE WDTO_30MS
+
+inline void watchdog_init() {
+  /* Enable watchdog */
+  wdt_reset();
+  /* Watchdog will trigger ~ every 30ms
+   * (based on the internal 128KHz clock). */
+  wdt_enable(TIMEBASE);
+
+  #ifdef WDTCSR  /* 2313 */
+  /* Set WDCE (change enable), Set WDIE (interrupt) */
+  WDTCSR |= _BV(WDCE) | _BV(WDIE);
+  /* Clear WDE (no reset) */
+  WDTCSR &= ~(_BV(WDE));
+  #endif
+
+  #ifdef WDTCR   /* 2313A */
+  /* Set WDCE (change enable), Set WDIE (interrupt) */
+  WDTCR |= _BV(WDCE) | _BV(WDIE);
+  /* Clear WDE (no reset) */
+  WDTCR &= ~(_BV(WDE));
+  #endif
+
+  /* Reduce power, but still wake up on Watchdog, .. */
+  // set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+  set_sleep_mode(SLEEP_MODE_IDLE);
+}
+
+inline void power_init(void) {
+  /* Disable BOD mode */
+  /* Done by fuses */
+
+  /* Disable the Analog Comparator */
+  ACSR = _BV(ACD);
+
+  /* Turn off Counter0, and USART */
+  PRR = _BV(PRTIM0) | _BV(PRUSART);
+}
+
+/* INPUT is PD6/ICPI , pin #11 on ATTiny2313A PDIP/SOIC */
+#define INPUT_PORT PORTD6
+
+/* Connect a pull-up resistor between Vcc and the input port.
+ * Tested values for pull-up: 100K-ohm, 1M-ohm.
+ */
+
+inline void ports_init(void) {
+  /* Configure PORTD */
+  PORTD &= ~_BV(INPUT_PORT); /* PD6 is kept output-low/input-Hi-Z */
+  /* Note: this should already be the default. */
+}
+
+inline void set_input_low(void) {
+  /* Set to output (low) */
+  DDRD |= _BV(INPUT_PORT);
+}
+
+inline void set_input_charge(void) {
+  /* Set input Hi-Z */
+  DDRD &= ~_BV(INPUT_PORT);
+}
+
+inline void ioinit(void) {
+  /* Prevent any interrupt while we are changing things */
+  cli();
+
+  /* Initialize power-saving modes */
+  power_init();
+
+  ports_init();
+  /* Hardware initialization is done. Proceed with data initialization. */
+
+  /* Indicate the state to the watchdog handler */
+  state = state_start;
+
+  watchdog_init();
+
+  /* Let's get started (re-establish interrupts) */
+  sei();
+}
+
+/* Use port D0 (pin #2 on ATTiny2313A) as output. */
+#define LED_PIN PORTD0
+
+inline void led_off(void) {
+  DDRD |= _BV(LED_PIN);
+  PORTD &= ~_BV(LED_PIN);
+}
+inline void led_on(void) {
+  DDRD |= _BV(LED_PIN);
+  PORTD |= _BV(LED_PIN);
+}
+inline void led_toggle(void) {
+  DDRD |= _BV(LED_PIN);
+  PORTD ^= _BV(LED_PIN);
 }
 
 
-int main(void) {
+inline void start_measure(void) {
+  /* Activate noise canceler, detection on rising edge */
+  /* clkIO with /256 prescaling. */
+  TCCR1B |= _BV(ICNC1) | _BV(ICES1) | _BV(CS10);
 
-  uint16_t c = 0;
+  /* Clear Input Capture Flag */
+  TIFR |= _BV(ICF1); /* "ICF1 can be cleared by writing a logic one to its bit location" */
 
-  int on = 0;
+  /* Clear the counter */
+  TCNT1 = 0;
+}
 
-  DDRB = 0xFF;       // set all 8 pins on port B to outputs
-  PORTB = 0x0;       // set all pins on port B low (turn off LEDs)
+inline uint8_t measured(void) {
+  return TIFR & _BV(ICF1);
+}
 
-  // Port D0 en Hi-Z/Output Low
-  // Autre ports Dn en Pulled-Up/Output High
-  PORTD = 0xfe;
+/* This is the code that uses the touch input. */
 
-  // Turn pull-ups On
-  MCUCR &= ~(1<<PUD);
+/* In our case we want to blink the LED at a rate that will heighten when
+ * touch is on, and slow back down when touch is off.
+ */
 
-  uint16_t d = 0;
-  int led = 0;
+/* This is the inverse-frequency that is controlled by the off/on process.*/
+#define default_freq 16
 
-  uint16_t max = 100;
-  uint16_t wait  = 0;
+uint8_t case_freq    = default_freq;
 
-  while(1) {
-    if(PIND & 1) {
-      if(c > max) { // 100 works with dry fingers.
-        on = 1;
-      } else {
-        on = 0;
-      }
-      // Port D0 en output 0, others Dn in input
-      DDRD = 0x01;
-      // Port D0 in input Hi-Z, others in input
-      DDRD = 0x00;
-      c = 0;
-    } else {
-      c++;
-    }
-    PORTB = (max<<1)+on;
+/* This is the counter for the led state process. */
+uint8_t case_cycle   = 0;
 
-    wait++;
-    if(wait > 10000) {
-      if(PIND & 2) {
-        max++;
-      }
-      if(PIND & 4) {
-        if(max > 0){
-          max--;
-        }
-      }
-      wait = 0;
-    }
-/*
-    if(on) {
-      d += 2;
-    } else {
-      d += 1;
-    }
-    if(d > 40) {
-      led = !led;
-      d = 0;
-    }
-    if(led) {
-        PORTB = 0xff;
-    } else {
-        PORTB = 0x00;
-    } // on
-*/
+inline void case_step(void) {
+  if(!case_cycle) {
+    led_toggle();
+    case_cycle = case_freq;
+  } else {
+    case_cycle--;
   }
 }
+
+uint8_t case_off_wait = 0; /* control how fast we go down */
+inline void case_off(void) {
+  case_off_wait++;
+  if(case_off_wait < 4) {
+    return;
+  }
+  case_off_wait = 0;
+  if(case_freq < default_freq) {
+    case_freq++;
+  }
+}
+
+uint8_t case_on_wait = 0; /* control how fast we go up */
+inline void case_on(void) {
+  case_on_wait++;
+  if(case_on_wait < 2) {
+    return;
+  }
+  case_on_wait = 0;
+  if(case_freq) {
+    case_freq--;
+  }
+}
+
+
+/* Watchdog timer handler */
+
+uint8_t counter = 0;
+
+inline void to(uint8_t new_state) {
+  state = new_state;
+  counter = 0;
+}
+
+uint8_t measures = 0;
+
+uint16_t led_off_max = 0;
+uint16_t led_on_min = 0xffff;
+
+const uint8_t wait_timeout = intervals(1.500);
+const uint8_t discharge_cycles = 2;
+const uint8_t max_measures = intervals(2.500);
+
+ISR( WDT_OVERFLOW_vect, ISR_BLOCK ) {
+  counter++;
+  status(state);
+
+  switch(state) {
+    case state_start:
+      led_off_max = 0;
+      led_on_min = 0xffff;
+      led_on(); /* blink to indicate start */
+      to(state_setup_led_off);
+      return;
+
+    case state_setup_led_off:
+      measures = max_measures;
+      led_off();
+      to(state_setup_led_off_waiting);
+      return;
+
+    case state_setup_led_off_waiting:
+      if(counter >= wait_timeout) {
+        to(state_setup_led_off_start);
+      }
+      return;
+
+    case state_setup_led_off_start:
+      if(counter < discharge_cycles) {
+        set_input_low();
+      } else {
+        to(state_setup_led_off_low);
+      }
+      return;
+
+    case state_setup_led_off_low:
+      start_measure();
+      set_input_charge();
+      to(state_setup_led_off_charging);
+      return;
+
+    case state_setup_led_off_charging:
+      if(measured()) {
+        uint16_t measure = ICR1;
+        // status(measure>>8);
+        if(measure > led_off_max) {
+          led_off_max = measure;
+        }
+        measures--;
+        if(measures) {
+          to(state_setup_led_off_start);
+          return;
+        }
+        /* Done measuring here */
+        to(state_setup_led_on);
+      }
+      return;
+
+    case state_setup_led_on:
+      measures = max_measures;
+      led_on();
+      to(state_setup_led_on_waiting);
+      return;
+
+    case state_setup_led_on_waiting:
+      if(counter >= wait_timeout) {
+        to(state_setup_led_on_start);
+      }
+      return;
+
+    case state_setup_led_on_start:
+      if(counter < discharge_cycles) {
+        set_input_low();
+      } else {
+        to(state_setup_led_on_low);
+      }
+      return;
+
+    case state_setup_led_on_low:
+      start_measure();
+      set_input_charge();
+      to(state_setup_led_on_charging);
+      return;
+
+    case state_setup_led_on_charging:
+      if(measured()) {
+        uint16_t measure = ICR1;
+        // status(measure>>8);
+        if(measure < led_on_min) {
+          led_on_min = measure;
+        }
+        measures--;
+        if(measures) {
+          to(state_setup_led_on_start);
+          return;
+        }
+        /* Done measuring: Decision time! */
+        if(led_off_max < led_on_min) {
+          /* Looks good, switch to normal mode. */
+          to(state_work);
+        } else {
+          /* Setup failed, start over. */
+          to(state_start);
+        }
+      }
+      return;
+
+    case state_work:
+      case_step();
+      to(state_work_start);
+      return;
+
+    case state_work_start:
+      case_step();
+      if(counter < discharge_cycles) {
+        set_input_low();
+      } else {
+        to(state_work_low);
+      }
+      return;
+
+    case state_work_low:
+      case_step();
+      start_measure();
+      set_input_charge();
+      to(state_work_charging);
+      return;
+
+    case state_work_charging:
+      case_step();
+      if(measured()) {
+        uint16_t measure = ICR1;
+        if(measure <= led_off_max) {
+          case_off();
+        }
+        if(measure >= led_on_min) {
+          case_on();
+        }
+        to(state_work_start);
+      }
+      return;
+
+  }
+}
+
+/* Startup */
+__attribute__((naked))    // suppress redundant SP initialization
+extern int main(void) {
+  ioinit();
+
+  while(1) {
+    sleep_mode();
+  }
+
+  return 0;
+}
+
+/* Build Chain Breakage on my machine */
+void exit(int __status) {}
