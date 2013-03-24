@@ -2,7 +2,7 @@ BOM
 ===
 
 * ATTiny2313A -- 0.66€/100 -- Farnell ref 1841616 [ATTINY2313A-PU]  66€
-* resistance 100K -- 0.01€/500 Farnell ref 1700264                   5€
+* resistance 100K -- 0.01€/500 Farnell ref 1700264                   5€ (valeur à confirmer expérimentalement, quelque chose plus proche de 1M est peut-être plus indiqué)
 * resistance  (et/ou PWM)      
 * CR2032 -- amazon.fr 3€ les 12                                     30€
 * LED:  HLMP-3519 0.196€/100 -- Farnell ref 1003218                 19.6€
