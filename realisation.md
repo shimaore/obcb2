@@ -10,10 +10,12 @@ BOM
 * le support de pile sera en carton! avec du coton hydrophyle pour padder
 * fil nu où nécessaire (pas besoin de denuder le fil!)
 * adhesive copper tape (12mm / 16m = 21.37€) Farnell ref 1653450
+* papier alu (pour le touchpad -- la mine de crayon ne fonctionne pas)
+* épingles pour fixer sur un vêtement
 
 Outillage:
 * clous pour percer le printer paper board (je cite)
-* fers a souder, éponges, soudure
+* fers a souder, éponges, soudure, rallonges électriques
 
 Code
 ====
