@@ -2,10 +2,12 @@ BOM
 ===
 
 * ATTiny2313A -- 0.66€/100 -- Farnell ref 1841616 [ATTINY2313A-PU]  66€
-* resistance 100K -- 0.01€/500 Farnell ref 1700264                   5€ (valeur à confirmer expérimentalement, quelque chose plus proche de 1M est peut-être plus indiqué)
-* resistance  (et/ou PWM)      
-* CR2032 -- amazon.fr 3€ les 12                                     30€
-* LED:  HLMP-3519 0.196€/100 -- Farnell ref 1003218                 19.6€
+* Pull-up http://fr.farnell.com/multicomp/mcre000073/resistance-carbon-film-125mw-1m/dp/1700277
+* CR2032
+  * http://www.amazon.fr/Panasonic-Piles-Boutons-Lithium-CR2032/dp/B002EVOA5E
+* LED:
+  * http://fr.farnell.com/kingbright/l-9294surck/led-wide-view-130-rouge/dp/2079968 11.10€
+  * http://fr.farnell.com/kingbright/l-9294syck/led-wide-view-130-jaune/dp/2079973 11.10€
 * carton ou bristol comme support
 * le support de pile sera en carton! avec du coton hydrophyle pour padder
 * fil nu où nécessaire (pas besoin de denuder le fil!)
@@ -13,9 +15,38 @@ BOM
 * papier alu (pour le touchpad -- la mine de crayon ne fonctionne pas)
 * épingles pour fixer sur un vêtement
 
-Outillage:
+Outillage
+=======
+
 * clous pour percer le printer paper board (je cite)
+* marteaux
+* paires de ciseau
 * fers a souder, éponges, soudure, rallonges électriques
+* glue gun, glue sticks
+
+Commande Farnell
+================
+    
+    ref     qty total (HT)
+    1841616 100  66.00     ATTiny2313A DIP
+    1700277 100   1.30     Resistance 1M-ohm
+    2065171 100  48.00     CR2032
+    2079973 100  11.10     LED jaune
+    
+    Total (sans la bande adhésive): 126.40 HT, 151.18 TTC + 12.00 port = 163.18
+
+Options:
+
+    1653450   1  21.37     bande electrique
+
+Autres
+======
+
+    Bristol (une pochette), prix: ?
+    Coton
+    Fil nu (à récupérer: fil Cat3/Cat5 de récup)
+    Papier alu (un rouleau), prix: ?
+    Epingles de nourrice ou autres, prix: ?
 
 Code
 ====
