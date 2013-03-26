@@ -14,9 +14,10 @@ BOM
 * adhesive copper tape (12mm / 16m = 21.37€) Farnell ref 1653450
 * papier alu (pour le touchpad -- la mine de crayon ne fonctionne pas)
 * épingles pour fixer sur un vêtement
+* sachets pour donner aux gens
 
 Outillage
-=======
+=========
 
 * clous pour percer le printer paper board (je cite)
 * marteaux
@@ -26,14 +27,18 @@ Outillage
 
 Commande Farnell
 ================
-    
+
+Idée: on fait 80 kits à 2€ avec une LED jaune et une rouge, et 20 kits à 3€ avec 8 rouges?
+
     ref     qty total (HT)
     1841616 100  66.00     ATTiny2313A DIP
     1700277 100   1.30     Resistance 1M-ohm
     2065171 100  48.00     CR2032
     2079973 100  11.10     LED jaune
-    
-    Total (sans la bande adhésive): 126.40 HT, 151.18 TTC + 12.00 port = 163.18
+    2079968 250  23.75     LED rouge
+    1503144   1   2.91     lot de 100 sachets roses
+
+    Total (sans la bande adhésive): 153.06 HT, 183.06 TTC + 12.00 port = 195.06
 
 Options:
 
@@ -42,18 +47,25 @@ Options:
 Autres
 ======
 
+A acheter au supermarché du coin:
+
     Bristol (une pochette), prix: ?
-    Coton
-    Fil nu (à récupérer: fil Cat3/Cat5 de récup)
     Papier alu (un rouleau), prix: ?
+    Coton, prix: ?
     Epingles de nourrice ou autres, prix: ?
+
+A récupérer:
+
+    Fil nu (à récupérer: fil Cat3/Cat5 de récup)
 
 Code
 ====
 
-Changements a faire:
+Changements à faire:
 * PWM pour la sortie
 * faire moins de mesures (pour le setup -- trop long)
 * sauvegarder les params dans l'EEPROM, utiliser un pin pour reset
 * plusieurs sortie pour indiquer l'etat
+* plusieurs sorties avec animation (pour le paquet "multi-LED"): larson scanner, PoV, ..
 * monter plus vite quand le doigt est posé
+* 
