@@ -171,7 +171,7 @@ inline uint8_t measured(void) {
  */
 
 /* This is the inverse-frequency that is controlled by the off/on process.*/
-#define default_freq 16
+#define default_freq 14
 
 uint8_t case_freq    = default_freq;
 
@@ -199,16 +199,8 @@ inline void case_off(void) {
   }
 }
 
-uint8_t case_on_wait = 0; /* control how fast we go up */
 inline void case_on(void) {
-  case_on_wait++;
-  if(case_on_wait < 2) {
-    return;
-  }
-  case_on_wait = 0;
-  if(case_freq) {
-    case_freq--;
-  }
+  case_freq = 1;
 }
 
 
