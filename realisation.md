@@ -1,8 +1,8 @@
 Achats
 ======
 
-N = nombre de postes dans l'atelier
-K < N à partager
+N = nombre de postes dans l'atelier; 
+K = à partager (< N)
 
 Pour OBCB2 N=250
 
