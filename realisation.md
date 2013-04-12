@@ -1,10 +1,11 @@
 Achats
 ======
 
-N = nombre de postes dans l'atelier; 
-K = à partager (< N)
+N = nombre de kits
+P = nombre de postes dans l'atelier; 
+K = à partager (< P)
 
-Pour OBCB2 N=250
+Pour OBCB#2 N=250
 
 Commande Farnell
 ----------------
@@ -25,7 +26,7 @@ Commande pour 250 kits de base avec 2 LEDs:
 A acheter au supermarché du coin
 --------------------------------
 
-    N/48 Bristol (une pochette de 12 = 48 kits), prix: ~4.20€, Qty: 6, 25.20TTC
+    N/48 Bristol (une pochette de 12 = 48 kits), prix: ~4.20€, Qty: 6 → 25.20TTC
     N Epingles de nourrice ou autres, prix: ?
     Papier alu (un rouleau), prix: ?
 
@@ -35,8 +36,8 @@ A acheter ailleurs
 ------------------
 
     Une boîte de clous/vis
-    N fers à souder
-    N/2 éponges
+    P fers à souder
+    P/2 éponges
     K paire de ciseau
     K glue guns (pistocolle)
     glue sticks
@@ -82,7 +83,7 @@ Chaque sachet doit contenir:
     1   LED rouge
     1   Epingle à nourrice
 
-On remet:
+On remet pour chaque kit:
 
     1   Sachet
     1   Bristol A6 (coloris au choix)
