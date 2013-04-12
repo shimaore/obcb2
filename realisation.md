@@ -22,9 +22,6 @@ Commande pour 250 kits de base avec 2 LEDs:
 
     Total: 346.75 HT, 414.71 TTC + 12.00 port = 426.71 €
 
-Autres Achats
-=============
-
 A acheter au supermarché du coin
 --------------------------------
 
