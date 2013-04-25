@@ -1,71 +1,90 @@
-BOM
-===
+Achats
+======
 
-* ATTiny2313A -- 0.66€/100 -- Farnell ref 1841616 [ATTINY2313A-PU]  66€
-* Pull-up http://fr.farnell.com/multicomp/mcre000073/resistance-carbon-film-125mw-1m/dp/1700277
-* CR2032
-  * http://www.amazon.fr/Panasonic-Piles-Boutons-Lithium-CR2032/dp/B002EVOA5E
-* LED:
-  * http://fr.farnell.com/kingbright/l-9294surck/led-wide-view-130-rouge/dp/2079968 11.10€
-  * http://fr.farnell.com/kingbright/l-9294syck/led-wide-view-130-jaune/dp/2079973 11.10€
-* carton ou bristol comme support
-* le support de pile sera en carton! avec du coton hydrophyle pour padder
-* fil nu où nécessaire (pas besoin de denuder le fil!)
-* adhesive copper tape (12mm / 16m = 21.37€) Farnell ref 1653450
-* papier alu (pour le touchpad -- la mine de crayon ne fonctionne pas)
-* épingles pour fixer sur un vêtement
-* sachets pour donner aux gens
+N = nombre de kits
+P = nombre de postes dans l'atelier; 
+K = à partager (< P)
 
+Pour OBCB#2 N=250
+
+Commande Farnell
+----------------
+
+Commande pour 250 kits de base avec 2 LEDs:
+
+    ref     qty total (HT)
+    1841616 250 165.00     ATTiny2313A DIP
+    1700277 250   3.25     Resistance 1M-ohm
+    2065171 250 115.00     CR2032
+    2079973 250  23.75     LED jaune
+    2079968 250  23.75     LED rouge
+    1687853  25  16.00     Sachet (lot de 10)
+    ???????                Soudure
+
+    Total: 346.75 HT, 414.71 TTC + 12.00 port = 426.71 €
+
+A acheter au supermarché du coin
+--------------------------------
+
+    N/48 Bristol (une pochette de 12 = 48 kits), prix: ~4.20€, Qty: 6 → 25.20TTC
+    N Epingles de nourrice ou autres, prix: ?
+    Papier alu (un rouleau), prix: ?
+
+    Bande adhésive ou scelleur à pile (pour fermer les sachets)
+
+A acheter ailleurs
+------------------
+
+    Une boîte de clous/vis
+    P fers à souder
+    P/2 éponges
+    K paire de ciseau
+    K glue guns (pistocolle)
+    glue sticks
+    K rouleaux de bande adhésive
+    K pinces à dénuder
+    Crayons de couleur
+    Feutres
+    Rallonges/multiprises électriques
+
+A récupérer
+-----------
+
+    Fil nu (à récupérer: fil Cat3/Cat5 de récup)
+    
 Outillage
 =========
 
-* clous pour percer le printer paper board (je cite)
-* marteaux
-* paires de ciseau
-* fers a souder, éponges, soudure, rallonges électriques
-* glue gun, glue sticks
+Pour chaque poste dans un atelier:
+* 1 clou ou vis pour percer le printer paper board (je cite)
+* 1 fer à souder
+* soudure
+* 1 éponge (ou demi-éponge)
+* 1 paire de ciseau
 
-Commande Farnell
-================
+À partager entre les postes:
+* rallonges/multiprises électriques
+* glue guns (pistocolle)
+* glue sticks
+* rouleaux de bande adhésive
+* pinces à dénuder
+* crayons de couleur
+* feutres
 
-Idée: on fait 80 kits à 2€ avec une LED jaune et une rouge, et 20 kits à 3€ avec 8 rouges?
+Ensachage
+=========
 
-    ref     qty total (HT)
-    1841616 100  66.00     ATTiny2313A DIP
-    1700277 100   1.30     Resistance 1M-ohm
-    2065171 100  48.00     CR2032
-    2079973 100  11.10     LED jaune
-    2079968 250  23.75     LED rouge
-    1503144   1   2.91     lot de 100 sachets roses
+Chaque sachet doit contenir:
 
-    Total (sans la bande adhésive): 153.06 HT, 183.06 TTC + 12.00 port = 195.06
+    1   ATTiny2313A
+    1   Resistance
+    1   Pile CR2032
+    1   LED jaune
+    1   LED rouge
+    1   Epingle à nourrice
 
-Options:
+On remet pour chaque kit:
 
-    1653450   1  21.37     bande electrique
-
-Autres
-======
-
-A acheter au supermarché du coin:
-
-    Bristol (une pochette), prix: ?
-    Papier alu (un rouleau), prix: ?
-    Coton, prix: ?
-    Epingles de nourrice ou autres, prix: ?
-
-A récupérer:
-
-    Fil nu (à récupérer: fil Cat3/Cat5 de récup)
-
-Code
-====
-
-Changements à faire:
-* PWM pour la sortie
-* faire moins de mesures (pour le setup -- trop long)
-* sauvegarder les params dans l'EEPROM, utiliser un pin pour reset
-* plusieurs sortie pour indiquer l'etat
-* plusieurs sorties avec animation (pour le paquet "multi-LED"): larson scanner, PoV, ..
-* monter plus vite quand le doigt est posé
-* 
+    1   Sachet
+    1   Bristol A6 (coloris au choix)
+    1   Bristol pré-imprimé
