@@ -12,7 +12,7 @@ override LDFLAGS=
 	${CC} ${CFLAGS} -c $<
 
 %.elf: %.o
-	${LD} ${LDFLAGS} -Map $@.map -o $@ $< /usr/lib/avr/lib/libc.a /usr/lib/avr/lib/avr25/crttn2313a.o
+	${LD} ${LDFLAGS} -Map $@.map -o $@ $< /usr/lib/avr/lib/avr25/libc.a /usr/lib/avr/lib/avr25/crttn2313a.o
 
 %.lst: %.elf
 	avr-objdump -h -S $< > $@
