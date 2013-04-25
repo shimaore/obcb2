@@ -3,6 +3,7 @@
 #include <avr/wdt.h>    // Watchdog
 #include <avr/sleep.h>  // Sleep Mode
 #include <avr/interrupt.h> // cli() etc.
+#include <avr/eeprom.h>
 
 inline void status(uint8_t b) {
   DDRB = 0xff;
@@ -16,6 +17,13 @@ inline void status(uint8_t b) {
 #define PCIE2 4
 #endif
 
+/* Address 0 is used e.g. by avrdude, etc., so skip the first few ones. */
+#define EEPROM_COOKIE ((uint16_t*)4)
+#define EEPROM_OFFMAX ((uint16_t*)6)
+#define EEPROM_ONMIN  ((uint16_t*)8)
+
+#define MAGIC_COOKIE  0xbeef
+
 enum {
   state_start,
   /* In Setup mode, we let the user train us by flashing the light on and off at 0.25Hz.
@@ -23,13 +31,13 @@ enum {
    * During the first 0.5s of each 2s "on" period we do not collect data (this gives the user
    * time to actually move their finger). We then sample for 1.5s.
    */
-  state_setup_led_off = 0x9,
+  state_setup_led_off,
   state_setup_led_off_waiting, /* 0.5s LED off, no data gathering */
   state_setup_led_off_start,
   state_setup_led_off_low,
   state_setup_led_off_charging,
 
-  state_setup_led_on = 0x11,
+  state_setup_led_on,
   state_setup_led_on_waiting, /* 0.5s LED on, no data gathering ("move finger" period)*/
   state_setup_led_on_start,
   state_setup_led_on_low,     /* 0.03s LED on, input low = discharge */
@@ -42,7 +50,7 @@ enum {
    * In work state we sample at 20Hz and do something useful if we detect the finger
    * is present.
    */
-  state_work = 0x21,
+  state_work,
   state_work_start,        /* 0.01s Input low = discharge */
   state_work_low,          /* input Hi-Z = charge */
   state_work_charging
@@ -92,6 +100,9 @@ inline void power_init(void) {
 /* INPUT is PD6/ICPI , pin #11 on ATTiny2313A PDIP/SOIC */
 #define INPUT_PORT PORTD6
 
+/* Use port D1 (pin #3 on ATTiny2313A DIP) as "reset eeprom". */
+#define CLEAR_PIN PORTD1
+
 /* Connect a pull-up resistor between Vcc and the input port.
  * Tested values for pull-up: 100K-ohm, 1M-ohm.
  */
@@ -100,6 +111,10 @@ inline void ports_init(void) {
   /* Configure PORTD */
   PORTD &= ~_BV(INPUT_PORT); /* PD6 is kept output-low/input-Hi-Z */
   /* Note: this should already be the default. */
+
+  /* Force check pin down */
+  PORTD &= ~_BV(CLEAR_PIN); // down
+  DDRD  |=  _BV(CLEAR_PIN); // output
 }
 
 inline void set_input_low(void) {
@@ -131,7 +146,7 @@ inline void ioinit(void) {
   sei();
 }
 
-/* Use port D0 (pin #2 on ATTiny2313A) as output. */
+/* Use port D0 (pin #2 on ATTiny2313A DIP) as output. */
 #define LED_PIN PORTD0
 
 inline void led_off(void) {
@@ -224,13 +239,28 @@ const uint8_t max_measures = intervals(2.500);
 
 ISR( WDT_OVERFLOW_vect, ISR_BLOCK ) {
   counter++;
-  status(state);
+  // status(state);
 
   switch(state) {
     case state_start:
+      led_on(); /* blink to indicate start */
+      if(PIND & _BV(CLEAR_PIN)) {
+        /* If check pin is up, reset */
+        eeprom_busy_wait();
+        eeprom_update_word(EEPROM_COOKIE,0);
+      }
+      eeprom_busy_wait();
+      uint16_t cookie = eeprom_read_word(EEPROM_COOKIE);
+      eeprom_busy_wait();
+      if(cookie == MAGIC_COOKIE) {
+        led_off_max = eeprom_read_word(EEPROM_OFFMAX);
+        led_on_min  = eeprom_read_word(EEPROM_ONMIN);
+        eeprom_busy_wait();
+        to(state_work);
+        return;
+      }
       led_off_max = 0;
       led_on_min = 0xffff;
-      led_on(); /* blink to indicate start */
       to(state_setup_led_off);
       return;
 
@@ -263,7 +293,6 @@ ISR( WDT_OVERFLOW_vect, ISR_BLOCK ) {
     case state_setup_led_off_charging:
       if(measured()) {
         uint16_t measure = ICR1;
-        // status(measure>>8);
         if(measure > led_off_max) {
           led_off_max = measure;
         }
@@ -306,7 +335,6 @@ ISR( WDT_OVERFLOW_vect, ISR_BLOCK ) {
     case state_setup_led_on_charging:
       if(measured()) {
         uint16_t measure = ICR1;
-        // status(measure>>8);
         if(measure < led_on_min) {
           led_on_min = measure;
         }
@@ -318,6 +346,11 @@ ISR( WDT_OVERFLOW_vect, ISR_BLOCK ) {
         /* Done measuring: Decision time! */
         if(led_off_max < led_on_min) {
           /* Looks good, switch to normal mode. */
+          eeprom_busy_wait();
+          eeprom_update_word(EEPROM_COOKIE,MAGIC_COOKIE);
+          eeprom_update_word(EEPROM_OFFMAX,led_off_max);
+          eeprom_update_word(EEPROM_ONMIN,led_on_min);
+          eeprom_busy_wait();
           to(state_work);
         } else {
           /* Setup failed, start over. */
