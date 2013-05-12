@@ -10,6 +10,78 @@ inline void status(uint8_t b) {
   PORTB = ~b; /* common positive */
 }
 
+/* The 5 left bits spell out "tyfab.fr". The bottom 3 bits can
+   be used for clocking etc. */
+
+#define message_length 64
+const uint8_t message[message_length] = {
+  0b00000000,
+  0b00000001,
+  0b00000010,
+  0b00100011,
+  0b00100100,
+  0b00011101,
+  0b10000110,
+  0b10100111,
+  0b01111000,
+  0b00000001,
+  0b00001010,
+  0b00000011,
+  0b00010100,
+  0b00101101,
+  0b11111110,
+  0b00000111,
+  0b00011000,
+  0b00101001,
+  0b00010010,
+  0b00000011,
+  0b10000100,
+  0b10100101,
+  0b01111110,
+  0b00000111,
+  0b01000000,
+  0b00100001,
+  0b00110010,
+  0b01001011,
+  0b00000100,
+  0b10000101,
+  0b11111110,
+  0b10000111,
+
+  0b00000000,
+  0b00000001,
+  0b00000010,
+  0b00000011,
+  0b00000100,
+  0b00000101,
+  0b00000110,
+  0b00000111,
+  0b00000000,
+  0b00000001,
+  0b00000010,
+  0b00000011,
+  0b00000100,
+  0b00000101,
+  0b00000110,
+  0b00000111,
+  0b00000000,
+  0b00000001,
+  0b00000010,
+  0b00000011,
+  0b00000100,
+  0b00000101,
+  0b00000110,
+  0b00000111,
+  0b00000000,
+  0b00000001,
+  0b00000010,
+  0b00000011,
+  0b00000100,
+  0b00000101,
+  0b00000110,
+  0b00000111
+};
+
 #ifndef PCIE0
 #define PCIE0 PCIE
 #endif
@@ -237,9 +309,16 @@ const uint8_t wait_timeout = intervals(1.500);
 const uint8_t discharge_cycles = 2;
 const uint8_t max_measures = intervals(2.500);
 
+uint8_t cycle = 0;
+
 ISR( WDT_OVERFLOW_vect, ISR_BLOCK ) {
   counter++;
-  // status(state);
+
+  /* Handle status output message */
+  status(message[cycle++]);
+  if(cycle >= message_length) {
+    cycle = 0;
+  }
 
   switch(state) {
     case state_start:
